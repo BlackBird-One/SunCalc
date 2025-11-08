@@ -26,7 +26,12 @@ class TimeUtils {
 	}
 
 	class func getHourAngle(h: Double, phi: Double, d: Double) -> Double {
-		return acos((sin(h) - sin(phi) * sin(d)) / (cos(phi) * cos(d)))
+        let value = (sin(h) - sin(phi) * sin(d)) / (cos(phi) * cos(d))
+        if value < -1 {
+            return acos(value)
+        } else {
+            return acos(value)
+        }
 	}
 
 	// swiftlint:disable:next function_parameter_count

@@ -28,7 +28,7 @@ class TimeUtils {
 	class func getHourAngle(h: Double, phi: Double, d: Double) -> Double {
         let value = (sin(h) - sin(phi) * sin(d)) / (cos(phi) * cos(d))
         if value < -1 {
-            return acos(value)
+            return acos(-1)
         } else {
             return acos(value)
         }

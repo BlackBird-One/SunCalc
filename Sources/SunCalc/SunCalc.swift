@@ -14,9 +14,7 @@ public class SunCalc {
 
 	public var sunrise: Date?
 	public var sunriseEnd: Date?
-	public var goldenHourEnd: Date?
 	public var solarNoon: Date?
-	public var goldenHour: Date?
 	public var sunsetStart: Date?
 	public var sunset: Date?
 	public var dusk: Date?
@@ -26,6 +24,22 @@ public class SunCalc {
 	public var nightEnd: Date?
 	public var nauticalDawn: Date?
 	public var dawn: Date?
+    public var morningBlueHourStart: Date? {
+        dawn
+    }
+    public var morningBlueHourEnd: Date? {
+        morningGoldenHourStart
+    }
+    public var morningGoldenHourStart: Date?
+    public var morningGoldenHourEnd: Date?
+    public var eveningGoldenHourStart: Date?
+    public var eveningGoldenHourEnd: Date?
+    public var eveningBlueHourStart: Date? {
+        eveningGoldenHourEnd
+    }
+    public var eveningBlueHourEnd: Date? {
+        dusk
+    }
 
 	// swiftlint:disable:next function_parameter_count
 	class func getSetJ(h: Double, phi: Double, dec: Double, lw: Double, n: Double, M: Double, L: Double) -> Double {
@@ -198,50 +212,68 @@ public class SunCalc {
 		// sun times configuration (angle, morning name, evening name)
 		// unrolled the loop working on this data:
 		// var times = [
-		//             [-0.83, 'sunrise',       'sunset'      ],
-		//             [ -0.3, 'sunriseEnd',    'sunsetStart' ],
-		//             [   -6, 'dawn',          'dusk'        ],
-		//             [  -12, 'nauticalDawn',  'nauticalDusk'],
-		//             [  -18, 'nightEnd',      'night'       ],
-		//             [    6, 'goldenHourEnd', 'goldenHour'  ]
+		//             [-0.83, 'sunrise',         'sunset'      ],
+		//             [ -0.3, 'sunriseEnd',      'sunsetStart' ],
+		//             [   -6, 'dawn',            'dusk'        ],
+		//             [  -12, 'nauticalDawn',    'nauticalDusk'],
+		//             [  -18, 'nightEnd',        'night'       ],
+        //             [   -6, 'morningBlueHourStart',   'eveningBlueHourEnd' ],
+        //             [   -4, 'morningBlueHourEnd',     'eveningBlueHourStart'  ]
+        //             [   -4, 'morningGoldenHourStart', 'eveningGoldenHourEnd'  ]
+		//             [    6, 'morningGoldenHourEnd',   'eveningGoldenHourStart' ]
 		//             ];
 
-		var h: Double = -0.83
+        let cSunrise = -0.83
+        let cSunriseEnd = -0.3
+        let cDawn = -6.0
+        let cNauticalDawn = -12.0
+        let cNightEnd = -18.0
+        let cGoldenHourStart = -4.0
+        let cGoldenHourEnd = 6.0
+
+
+		var h: Double = cSunrise
         var Jset: Double = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
 		var Jrise: Double = Jnoon - (Jset - Jnoon)
 
         self.sunrise = DateUtils.fromJulian(j: Jrise)
         self.sunset = DateUtils.fromJulian(j: Jset)
 
-		h = -0.3
+		h = cSunriseEnd
         Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
 		Jrise = Jnoon - (Jset - Jnoon)
         self.sunriseEnd = DateUtils.fromJulian(j: Jrise)
         self.sunsetStart = DateUtils.fromJulian(j: Jset)
 
-		h = -6
+		h = cDawn
         Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
 		Jrise = Jnoon - (Jset - Jnoon)
         self.dawn = DateUtils.fromJulian(j: Jrise)
         self.dusk = DateUtils.fromJulian(j: Jset)
 
-		h = -12
+		h = cNauticalDawn
         Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
 		Jrise = Jnoon - (Jset - Jnoon)
         self.nauticalDawn = DateUtils.fromJulian(j: Jrise)
         self.nauticalDusk = DateUtils.fromJulian(j: Jset)
 
-		h = -18
+		h = cNightEnd
         Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
 		Jrise = Jnoon - (Jset - Jnoon)
         self.nightEnd = DateUtils.fromJulian(j: Jrise)
         self.night = DateUtils.fromJulian(j: Jset)
 
-		h = 6
+		h = cGoldenHourEnd
         Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
 		Jrise = Jnoon - (Jset - Jnoon)
-        self.goldenHourEnd = DateUtils.fromJulian(j: Jrise)
-        self.goldenHour = DateUtils.fromJulian(j: Jset)
+        self.morningGoldenHourEnd = DateUtils.fromJulian(j: Jrise)
+        self.eveningGoldenHourStart = DateUtils.fromJulian(j: Jset)
+
+        h = cGoldenHourStart
+        Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
+        Jrise = Jnoon - (Jset - Jnoon)
+        self.morningGoldenHourStart = DateUtils.fromJulian(j: Jrise)
+        self.eveningGoldenHourEnd = DateUtils.fromJulian(j: Jset)
 
 	}
 }

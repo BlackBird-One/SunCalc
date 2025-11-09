@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "5759BA34-F7EA-4A2D-ADB8-3753E1FBDCBF",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "SunCalcTests",
+        "name" : "SunCalcTests"
+      }
+    }
+  ],
+  "version" : 1
+}

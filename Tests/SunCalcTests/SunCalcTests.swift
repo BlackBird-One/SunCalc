@@ -45,8 +45,16 @@ final class SunCalcTests: XCTestCase {
 		XCTAssertEqual(formatter.string(from: sunCalc.nauticalDusk!), "2013-03-05T16:57:22Z")
 		XCTAssertEqual(formatter.string(from: sunCalc.nightEnd!), "2013-03-05T02:46:17Z")
 		XCTAssertEqual(formatter.string(from: sunCalc.night!), "2013-03-05T17:35:36Z")
-		XCTAssertEqual(formatter.string(from: sunCalc.goldenHourEnd!), "2013-03-05T05:19:01Z")
-		XCTAssertEqual(formatter.string(from: sunCalc.goldenHour!), "2013-03-05T15:02:52Z")
+
+        XCTAssertEqual(formatter.string(from: sunCalc.morningBlueHourStart!),  "2013-03-05T04:02:17Z")
+        XCTAssertEqual(formatter.string(from: sunCalc.morningBlueHourEnd!),    "2013-03-05T04:14:53Z")
+        XCTAssertEqual(formatter.string(from: sunCalc.morningGoldenHourStart!),"2013-03-05T04:14:53Z")
+        XCTAssertEqual(formatter.string(from: sunCalc.morningGoldenHourEnd!),  "2013-03-05T05:19:01Z")
+
+        XCTAssertEqual(formatter.string(from: sunCalc.eveningGoldenHourStart!),"2013-03-05T15:02:52Z")
+        XCTAssertEqual(formatter.string(from: sunCalc.eveningGoldenHourEnd!),  "2013-03-05T16:07:00Z")
+        XCTAssertEqual(formatter.string(from: sunCalc.eveningBlueHourStart!),  "2013-03-05T16:07:00Z")
+        XCTAssertEqual(formatter.string(from: sunCalc.eveningBlueHourEnd!),    "2013-03-05T16:19:36Z")
 	}
 
 	func test_sun_getTimes_invalid() {
@@ -57,10 +65,18 @@ final class SunCalcTests: XCTestCase {
 		XCTAssertNotEqual(sunCalc.sunset, nil)
 		XCTAssertNotEqual(sunCalc.sunsetStart, nil)
 
-		XCTAssertEqual(sunCalc.goldenHourEnd, nil)
-		XCTAssertEqual(sunCalc.goldenHour, nil)
-		XCTAssertEqual(sunCalc.night, nil)
-		XCTAssertEqual(sunCalc.nightEnd, nil)
+        XCTAssertNotEqual(sunCalc.morningBlueHourStart, nil)
+        XCTAssertNotEqual(sunCalc.morningBlueHourEnd, nil)
+        XCTAssertNotEqual(sunCalc.morningGoldenHourStart, nil)
+        XCTAssertEqual(sunCalc.morningGoldenHourEnd, nil)
+
+        XCTAssertNotEqual(sunCalc.eveningBlueHourStart, nil)
+        XCTAssertNotEqual(sunCalc.eveningBlueHourEnd, nil)
+        XCTAssertEqual(sunCalc.eveningGoldenHourStart, nil)
+        XCTAssertNotEqual(sunCalc.eveningGoldenHourEnd, nil)
+
+        XCTAssertNotEqual(sunCalc.night, nil)
+        XCTAssertNotEqual(sunCalc.nightEnd, nil)
 	}
 
 	func test_sun_getPosition() {
@@ -91,6 +107,7 @@ final class SunCalcTests: XCTestCase {
         let moonTimes: MoonTimes = SunCalc.getMoonTimes(date: calendar.date(from: components)!, latitude: LAT, longitude: LNG)
         let formatter: DateFormatter = DateFormatter()
         formatter.dateFormat = "E, d MMM yyyy HH:mm:ss zzz"
+        formatter.locale = Locale(identifier: "en_US_POSIX")  // Important for parsing in localizations other than EN
         formatter.timeZone = TimeZone(abbreviation: "GMT")
         let rise: Date = formatter.date(from: "Mon, 04 Mar 2013 23:54:29 GMT")!
         let set: Date = formatter.date(from: "Mon, 04 Mar 2013 07:47:58 GMT")!

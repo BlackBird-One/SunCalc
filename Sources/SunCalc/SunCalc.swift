@@ -211,63 +211,6 @@ public class SunCalc {
         self.nadir = DateUtils.fromJulian(j: Jnoon - 0.5)
         self.nextNadir = DateUtils.fromJulian(j: Jnoon + 0.5)
 
-        // POLAR CONDITIONS DETECTION
-        // Check if we're in polar regions (latitude > 66.5°)
-        let isCircumPolar = abs(latitude) > 66.5
-        var isPolarDay = false
-        var isPolarNight = false
-
-        if isCircumPolar {
-            // Check sun altitude at nadir (midnight - lowest point)
-            if let nadirDate = self.nadir {
-                let midnightPosition = SunCalc.getSunPosition(
-                    timeAndDate: nadirDate,
-                    latitude: latitude,
-                    longitude: longitude
-                )
-                let midnightAltitude = midnightPosition.altitude * 180.0 / Constants.PI()
-
-                // If sun is above horizon at midnight → polar day
-                if midnightAltitude > -0.83 {
-                    isPolarDay = true
-                }
-            }
-
-            // Check sun altitude at solar noon (highest point)
-            if let noonDate = self.solarNoon {
-                let noonPosition = SunCalc.getSunPosition(
-                    timeAndDate: noonDate,
-                    latitude: latitude,
-                    longitude: longitude
-                )
-                let noonAltitude = noonPosition.altitude * 180.0 / Constants.PI()
-
-                // If sun is below horizon at noon → polar night
-                if noonAltitude < -0.83 {
-                    isPolarNight = true
-                }
-            }
-        }
-
-        // If polar day or polar night, set all sun events to nil
-        if isPolarDay || isPolarNight {
-            self.sunrise = nil
-            self.sunset = nil
-            self.sunriseEnd = nil
-            self.sunsetStart = nil
-            self.dawn = nil
-            self.dusk = nil
-            self.nauticalDawn = nil
-            self.nauticalDusk = nil
-            self.nightEnd = nil
-            self.night = nil
-            self.morningGoldenHourStart = nil
-            self.morningGoldenHourEnd = nil
-            self.eveningGoldenHourStart = nil
-            self.eveningGoldenHourEnd = nil
-            return
-        }
-
 		// sun times configuration (angle, morning name, evening name)
 		// unrolled the loop working on this data:
 		// var times = [
@@ -290,49 +233,122 @@ public class SunCalc {
         let cGoldenHourStart = -4.0
         let cGoldenHourEnd = 6.0
 
+        // POLAR CONDITIONS DETECTION
+        // Get sun altitude at noon (highest point) and midnight (lowest point)
+        var noonAltitude: Double = 0
+        var midnightAltitude: Double = 0
 
-		var h: Double = cSunrise
-        var Jset: Double = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
-		var Jrise: Double = Jnoon - (Jset - Jnoon)
+        if let noonDate = self.solarNoon {
+            let noonPosition = SunCalc.getSunPosition(
+                timeAndDate: noonDate,
+                latitude: latitude,
+                longitude: longitude
+            )
+            noonAltitude = noonPosition.altitude * 180.0 / Constants.PI()
+        }
 
-        self.sunrise = DateUtils.fromJulian(j: Jrise)
-        self.sunset = DateUtils.fromJulian(j: Jset)
+        if let nadirDate = self.nadir {
+            let midnightPosition = SunCalc.getSunPosition(
+                timeAndDate: nadirDate,
+                latitude: latitude,
+                longitude: longitude
+            )
+            midnightAltitude = midnightPosition.altitude * 180.0 / Constants.PI()
+        }
 
-		h = cSunriseEnd
-        Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
-		Jrise = Jnoon - (Jset - Jnoon)
-        self.sunriseEnd = DateUtils.fromJulian(j: Jrise)
-        self.sunsetStart = DateUtils.fromJulian(j: Jset)
+        // Determine which sun phases can occur based on sun altitude at noon and midnight
+        // If the minimum altitude (midnight) is above a threshold, that phase never ends
+        // If the maximum altitude (noon) is below a threshold, that phase never starts
+        let canHaveSunrise = noonAltitude >= cSunrise && midnightAltitude < cSunrise
+        let canHaveSunriseEnd = noonAltitude >= cSunriseEnd && midnightAltitude < cSunriseEnd
+        let canHaveDawn = noonAltitude >= cDawn && midnightAltitude < cDawn
+        let canHaveNauticalDawn = noonAltitude >= cNauticalDawn && midnightAltitude < cNauticalDawn
+        let canHaveNightEnd = noonAltitude >= cNightEnd && midnightAltitude < cNightEnd
+        // Golden hour má dvě fáze: -4° (start) a +6° (end)
+        // Může nastat pouze když slunce klesne pod 6° a vystoupí nad -4°
+        let canHaveGoldenHourEnd = noonAltitude >= cGoldenHourEnd && midnightAltitude < cGoldenHourEnd
+        let canHaveGoldenHourStart = noonAltitude >= cGoldenHourStart && midnightAltitude < cGoldenHourStart
 
-		h = cDawn
-        Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
-		Jrise = Jnoon - (Jset - Jnoon)
-        self.dawn = DateUtils.fromJulian(j: Jrise)
-        self.dusk = DateUtils.fromJulian(j: Jset)
+        // Only calculate times for phases that can actually occur
+        if canHaveSunrise {
+            let h: Double = cSunrise
+            let Jset: Double = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
+            let Jrise: Double = Jnoon - (Jset - Jnoon)
 
-		h = cNauticalDawn
-        Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
-		Jrise = Jnoon - (Jset - Jnoon)
-        self.nauticalDawn = DateUtils.fromJulian(j: Jrise)
-        self.nauticalDusk = DateUtils.fromJulian(j: Jset)
+            self.sunrise = DateUtils.fromJulian(j: Jrise)
+            self.sunset = DateUtils.fromJulian(j: Jset)
+        } else {
+            self.sunrise = nil
+            self.sunset = nil
+        }
 
-		h = cNightEnd
-        Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
-		Jrise = Jnoon - (Jset - Jnoon)
-        self.nightEnd = DateUtils.fromJulian(j: Jrise)
-        self.night = DateUtils.fromJulian(j: Jset)
+        if canHaveSunriseEnd {
+            let h: Double = cSunriseEnd
+            let Jset: Double = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
+            let Jrise: Double = Jnoon - (Jset - Jnoon)
+            self.sunriseEnd = DateUtils.fromJulian(j: Jrise)
+            self.sunsetStart = DateUtils.fromJulian(j: Jset)
+        } else {
+            self.sunriseEnd = nil
+            self.sunsetStart = nil
+        }
 
-		h = cGoldenHourEnd
-        Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
-		Jrise = Jnoon - (Jset - Jnoon)
-        self.morningGoldenHourEnd = DateUtils.fromJulian(j: Jrise)
-        self.eveningGoldenHourStart = DateUtils.fromJulian(j: Jset)
+        if canHaveDawn {
+            let h: Double = cDawn
+            let Jset: Double = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
+            let Jrise: Double = Jnoon - (Jset - Jnoon)
+            self.dawn = DateUtils.fromJulian(j: Jrise)
+            self.dusk = DateUtils.fromJulian(j: Jset)
+        } else {
+            self.dawn = nil
+            self.dusk = nil
+        }
 
-        h = cGoldenHourStart
-        Jset = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
-        Jrise = Jnoon - (Jset - Jnoon)
-        self.morningGoldenHourStart = DateUtils.fromJulian(j: Jrise)
-        self.eveningGoldenHourEnd = DateUtils.fromJulian(j: Jset)
+        if canHaveNauticalDawn {
+            let h: Double = cNauticalDawn
+            let Jset: Double = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
+            let Jrise: Double = Jnoon - (Jset - Jnoon)
+            self.nauticalDawn = DateUtils.fromJulian(j: Jrise)
+            self.nauticalDusk = DateUtils.fromJulian(j: Jset)
+        } else {
+            self.nauticalDawn = nil
+            self.nauticalDusk = nil
+        }
+
+        if canHaveNightEnd {
+            let h: Double = cNightEnd
+            let Jset: Double = SunCalc.getSetJ(h: h * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
+            let Jrise: Double = Jnoon - (Jset - Jnoon)
+            self.nightEnd = DateUtils.fromJulian(j: Jrise)
+            self.night = DateUtils.fromJulian(j: Jset)
+        } else {
+            self.nightEnd = nil
+            self.night = nil
+        }
+
+        // Golden hour end (6°) - slunce musí klesat pod 6° a vystoupit nad 6°
+        if canHaveGoldenHourEnd {
+            let h1: Double = cGoldenHourEnd
+            let Jset1: Double = SunCalc.getSetJ(h: h1 * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
+            let Jrise1: Double = Jnoon - (Jset1 - Jnoon)
+            self.morningGoldenHourEnd = DateUtils.fromJulian(j: Jrise1)
+            self.eveningGoldenHourStart = DateUtils.fromJulian(j: Jset1)
+        } else {
+            self.morningGoldenHourEnd = nil
+            self.eveningGoldenHourStart = nil
+        }
+
+        // Golden hour start (-4°) - slunce musí klesat pod -4° a vystoupit nad -4°
+        if canHaveGoldenHourStart {
+            let h2: Double = cGoldenHourStart
+            let Jset2: Double = SunCalc.getSetJ(h: h2 * Constants.RAD(), phi: phi, dec: dec, lw: lw, n: n, M: M, L: L)
+            let Jrise2: Double = Jnoon - (Jset2 - Jnoon)
+            self.morningGoldenHourStart = DateUtils.fromJulian(j: Jrise2)
+            self.eveningGoldenHourEnd = DateUtils.fromJulian(j: Jset2)
+        } else {
+            self.morningGoldenHourStart = nil
+            self.eveningGoldenHourEnd = nil
+        }
 
 	}
 }

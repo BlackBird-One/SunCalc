@@ -51,19 +51,21 @@ final class SunCalcEdgeCasesTests: XCTestCase {
         print("   nightEnd: \(times.nightEnd?.description ?? "nil")")
         print("   night: \(times.night?.description ?? "nil")")
 
-        // Pokud slunce neklesne pod -18°, astronomical twilight nenastává
-        if midnightAlt > -18.0 {
-            print("   ✅ Slunce neklesá pod -18° → nightEnd/night by měly být nil")
-            // TODO: SunCalc BUG - vrací čas místo nil
-            // XCTAssertNil(times.nightEnd, "nightEnd by měl být nil když slunce neklesne pod -18°")
-            // XCTAssertNil(times.night, "night by měl být nil když slunce neklesne pod -18°")
-        }
+        // V Reykjavíku během slunovratu je slunce o půlnoci vysoko nad horizontem (~47°)
+        // To znamená, že neklesá ani pod -6°, takže skoro všechny události jsou nil
+        XCTAssertGreaterThan(midnightAlt, -6.0, "Slunce by mělo být vysoko nad horizontem")
 
-        // Ostatní soumraky by měly existovat
-        XCTAssertNotNil(times.dawn, "Civil dawn by měl existovat")
-        XCTAssertNotNil(times.dusk, "Civil dusk by měl existovat")
-        XCTAssertNotNil(times.nauticalDawn, "Nautical dawn by měl existovat")
-        XCTAssertNotNil(times.nauticalDusk, "Nautical dusk by měl existovat")
+        // OPRAVENO: astronomical twilight nenastává
+        XCTAssertNil(times.nightEnd, "nightEnd by měl být nil když slunce neklesne pod -18°")
+        XCTAssertNil(times.night, "night by měl být nil když slunce neklesne pod -18°")
+
+        // Nautical twilight také nenastává (slunce neklesá pod -12°)
+        XCTAssertNil(times.nauticalDawn, "nauticalDawn by měl být nil když slunce neklesne pod -12°")
+        XCTAssertNil(times.nauticalDusk, "nauticalDusk by měl být nil když slunce neklesne pod -12°")
+
+        // Civil twilight také nenastává (slunce neklesá pod -6°)
+        XCTAssertNil(times.dawn, "dawn by měl být nil když slunce neklesne pod -6°")
+        XCTAssertNil(times.dusk, "dusk by měl být nil když slunce neklesne pod -6°")
     }
 
     /// Test: Astronomical twilight celý den v zimě na vysokých šířkách
@@ -211,16 +213,21 @@ final class SunCalcEdgeCasesTests: XCTestCase {
         // Pokud slunce neklesne pod -12° ale klesne pod -6°
         if midnightAlt > -12.0 && midnightAlt < -6.0 {
             print("   ✅ Slunce zůstává v civil twilight → nauticalDawn/Dusk by měly být nil")
-            // TODO: SunCalc BUG
-            // XCTAssertNil(times.nauticalDawn)
-            // XCTAssertNil(times.nauticalDusk)
-            // XCTAssertNil(times.nightEnd)
-            // XCTAssertNil(times.night)
-        }
+            // OPRAVENO: SunCalc nyní správně vrací nil
+            XCTAssertNil(times.nauticalDawn, "nauticalDawn by měl být nil")
+            XCTAssertNil(times.nauticalDusk, "nauticalDusk by měl být nil")
+            XCTAssertNil(times.nightEnd, "nightEnd by měl být nil")
+            XCTAssertNil(times.night, "night by měl být nil")
 
-        // Civil twilight by měl existovat
-        XCTAssertNotNil(times.dawn, "Dawn by měl existovat")
-        XCTAssertNotNil(times.dusk, "Dusk by měl existovat")
+            // Civil twilight by měl existovat
+            XCTAssertNotNil(times.dawn, "Dawn by měl existovat")
+            XCTAssertNotNil(times.dusk, "Dusk by měl existovat")
+        } else if midnightAlt > -6.0 {
+            // Slunce neklesá ani pod -6° - žádný civilní soumrak
+            print("   ⚠️ Slunce neklesá ani pod -6° - žádný civilní soumrak")
+            XCTAssertNil(times.dawn, "Dawn by měl být nil")
+            XCTAssertNil(times.dusk, "Dusk by měl být nil")
+        }
     }
 
     // MARK: - Golden Hour Tests (6° above horizon)

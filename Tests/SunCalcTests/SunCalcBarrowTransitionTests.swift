@@ -75,6 +75,68 @@ final class SunCalcBarrowTransitionTests: XCTestCase {
         print("   Evening golden hour end: \(times.eveningGoldenHourEnd != nil ? formatter.string(from: times.eveningGoldenHourEnd!) : "nil")")
     }
 
+    // MARK: - 8. května 2025
+
+    func test_barrow_2025_05_08() {
+        let date = makeDate(year: 2025, month: 5, day: 8)
+        let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
+        let altitudes = getSunAltitudes(date: date)
+
+        printEventSummary(date: date, times: times, altitudes: altitudes)
+
+        // Očekávané hodnoty
+        XCTAssertGreaterThan(altitudes.noon, cSunrise, "V poledne by slunce mělo být nad horizontem")
+        XCTAssertLessThan(altitudes.midnight, cSunrise, "O půlnoci by slunce mělo být pod horizontem")
+
+        // Sunrise a sunset musí existovat (ještě není polární den)
+        XCTAssertNotNil(times.sunrise, "8.5. - Sunrise by měl existovat")
+        XCTAssertNotNil(times.sunset, "8.5. - Sunset by měl existovat")
+        XCTAssertNotNil(times.sunriseEnd, "8.5. - SunriseEnd by měl existovat")
+        XCTAssertNotNil(times.sunsetStart, "8.5. - SunsetStart by měl existovat")
+
+        // Kontrola dawn/dusk podle midnight altitude
+        if altitudes.midnight < cDawn {
+            XCTAssertNotNil(times.dawn, "8.5. - Dawn by měl existovat když slunce klesne pod -6°")
+            XCTAssertNotNil(times.dusk, "8.5. - Dusk by měl existovat když slunce klesne pod -6°")
+        } else {
+            XCTAssertNil(times.dawn, "8.5. - Dawn by měl být nil když slunce neklesne pod -6°")
+            XCTAssertNil(times.dusk, "8.5. - Dusk by měl být nil když slunce neklesne pod -6°")
+        }
+
+        // Kontrola nautical podle midnight altitude
+        if altitudes.midnight < cNauticalDawn {
+            XCTAssertNotNil(times.nauticalDawn, "8.5. - NauticalDawn by měl existovat")
+            XCTAssertNotNil(times.nauticalDusk, "8.5. - NauticalDusk by měl existovat")
+        } else {
+            XCTAssertNil(times.nauticalDawn, "8.5. - NauticalDawn by měl být nil")
+            XCTAssertNil(times.nauticalDusk, "8.5. - NauticalDusk by měl být nil")
+        }
+
+        // Kontrola astronomical night
+        if altitudes.midnight < cNightEnd {
+            XCTAssertNotNil(times.nightEnd, "8.5. - NightEnd by měl existovat")
+            XCTAssertNotNil(times.night, "8.5. - Night by měl existovat")
+        } else {
+            XCTAssertNil(times.nightEnd, "8.5. - NightEnd by měl být nil")
+            XCTAssertNil(times.night, "8.5. - Night by měl být nil")
+        }
+
+        // Kontrola golden hour
+        if altitudes.midnight < cGoldenHourEnd && altitudes.noon >= cGoldenHourEnd {
+            XCTAssertNotNil(times.morningGoldenHourEnd, "8.5. - MorningGoldenHourEnd by měl existovat")
+            XCTAssertNotNil(times.eveningGoldenHourStart, "8.5. - EveningGoldenHourStart by měl existovat")
+        }
+
+        if altitudes.midnight < cGoldenHourStart && altitudes.noon >= cGoldenHourStart {
+            XCTAssertNotNil(times.morningGoldenHourStart, "8.5. - MorningGoldenHourStart by měl existovat")
+            XCTAssertNotNil(times.eveningGoldenHourEnd, "8.5. - EveningGoldenHourEnd by měl existovat")
+        }
+
+        // Solar noon a nadir vždy existují
+        XCTAssertNotNil(times.solarNoon, "8.5. - SolarNoon musí existovat")
+        XCTAssertNotNil(times.nadir, "8.5. - Nadir musí existovat")
+    }
+
     // MARK: - 9. května 2025
 
     func test_barrow_2025_05_09() {
@@ -295,15 +357,15 @@ final class SunCalcBarrowTransitionTests: XCTestCase {
         XCTAssertNotNil(times.nadir, "12.5. - Nadir musí existovat")
     }
 
-    // MARK: - Kompletní přehled všech 4 dní
+    // MARK: - Kompletní přehled všech 5 dní
 
     func test_barrow_transition_complete_overview() {
         print("\n" + String(repeating: "=", count: 80))
         print("KOMPLETNÍ PŘEHLED: Přechod do polárního dne v Utqiaġvik (Barrow)")
-        print("9. května až 12. května 2025")
+        print("8. května až 12. května 2025")
         print(String(repeating: "=", count: 80))
 
-        for day in 9...12 {
+        for day in 8...12 {
             let date = makeDate(year: 2025, month: 5, day: day)
             let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
             let altitudes = getSunAltitudes(date: date)
@@ -363,7 +425,7 @@ final class SunCalcBarrowTransitionTests: XCTestCase {
 
         var previousMidnight: Double?
 
-        for day in 9...12 {
+        for day in 8...12 {
             let date = makeDate(year: 2025, month: 5, day: day)
             let altitudes = getSunAltitudes(date: date)
 
@@ -380,12 +442,22 @@ final class SunCalcBarrowTransitionTests: XCTestCase {
         }
 
         // Kontrola přechodu přes práh sunrise (-0.83°)
+        let day8 = getSunAltitudes(date: makeDate(year: 2025, month: 5, day: 8))
         let day9 = getSunAltitudes(date: makeDate(year: 2025, month: 5, day: 9))
+        let day10 = getSunAltitudes(date: makeDate(year: 2025, month: 5, day: 10))
         let day11 = getSunAltitudes(date: makeDate(year: 2025, month: 5, day: 11))
         let day12 = getSunAltitudes(date: makeDate(year: 2025, month: 5, day: 12))
 
+        if day8.midnight < cSunrise {
+            print("   ✅ 8.5.: pod horizontem (\(String(format: "%.2f", day8.midnight))°)")
+        }
+
         if day9.midnight < cSunrise {
             print("   ✅ 9.5.: pod horizontem (\(String(format: "%.2f", day9.midnight))°)")
+        }
+
+        if day10.midnight < cSunrise {
+            print("   ✅ 10.5.: pod horizontem (\(String(format: "%.2f", day10.midnight))°) - poslední normální den")
         }
 
         if day11.midnight >= cSunrise {

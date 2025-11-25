@@ -21,6 +21,7 @@ public class SunCalc {
 	public var nauticalDusk: Date?
 	public var night: Date?
 	public var nadir: Date?
+	public var nextNadir: Date?
 	public var nightEnd: Date?
 	public var nauticalDawn: Date?
 	public var dawn: Date?
@@ -208,6 +209,7 @@ public class SunCalc {
 
         self.solarNoon = DateUtils.fromJulian(j: Jnoon)
         self.nadir = DateUtils.fromJulian(j: Jnoon - 0.5)
+        self.nextNadir = DateUtils.fromJulian(j: Jnoon + 0.5)
 
 		// sun times configuration (angle, morning name, evening name)
 		// unrolled the loop working on this data:

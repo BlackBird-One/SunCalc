@@ -211,6 +211,63 @@ public class SunCalc {
         self.nadir = DateUtils.fromJulian(j: Jnoon - 0.5)
         self.nextNadir = DateUtils.fromJulian(j: Jnoon + 0.5)
 
+        // POLAR CONDITIONS DETECTION
+        // Check if we're in polar regions (latitude > 66.5°)
+        let isCircumPolar = abs(latitude) > 66.5
+        var isPolarDay = false
+        var isPolarNight = false
+
+        if isCircumPolar {
+            // Check sun altitude at nadir (midnight - lowest point)
+            if let nadirDate = self.nadir {
+                let midnightPosition = SunCalc.getSunPosition(
+                    timeAndDate: nadirDate,
+                    latitude: latitude,
+                    longitude: longitude
+                )
+                let midnightAltitude = midnightPosition.altitude * 180.0 / Constants.PI()
+
+                // If sun is above horizon at midnight → polar day
+                if midnightAltitude > -0.83 {
+                    isPolarDay = true
+                }
+            }
+
+            // Check sun altitude at solar noon (highest point)
+            if let noonDate = self.solarNoon {
+                let noonPosition = SunCalc.getSunPosition(
+                    timeAndDate: noonDate,
+                    latitude: latitude,
+                    longitude: longitude
+                )
+                let noonAltitude = noonPosition.altitude * 180.0 / Constants.PI()
+
+                // If sun is below horizon at noon → polar night
+                if noonAltitude < -0.83 {
+                    isPolarNight = true
+                }
+            }
+        }
+
+        // If polar day or polar night, set all sun events to nil
+        if isPolarDay || isPolarNight {
+            self.sunrise = nil
+            self.sunset = nil
+            self.sunriseEnd = nil
+            self.sunsetStart = nil
+            self.dawn = nil
+            self.dusk = nil
+            self.nauticalDawn = nil
+            self.nauticalDusk = nil
+            self.nightEnd = nil
+            self.night = nil
+            self.morningGoldenHourStart = nil
+            self.morningGoldenHourEnd = nil
+            self.eveningGoldenHourStart = nil
+            self.eveningGoldenHourEnd = nil
+            return
+        }
+
 		// sun times configuration (angle, morning name, evening name)
 		// unrolled the loop working on this data:
 		// var times = [

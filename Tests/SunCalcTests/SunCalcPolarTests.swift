@@ -72,22 +72,15 @@ final class SunCalcPolarTests: XCTestCase {
         // Získej časy ze SunCalc
         let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
 
-        // DOKUMENTACE BUGU: SunCalc vrací čas místo nil
-        if let sunrise = times.sunrise {
-            print("   ❌ BUG: sunrise = \(sunrise) (mělo by být nil)")
-        }
-        if let sunset = times.sunset {
-            print("   ❌ BUG: sunset = \(sunset) (mělo by být nil)")
-        }
-
-        // TODO: Tyto testy SELŽOU kvůli bugu v SunCalc
-        // Po opravě SunCalc by měly projít
-        // XCTAssertNil(times.sunrise, "Sunrise by měl být nil v polárním dni")
-        // XCTAssertNil(times.sunset, "Sunset by měl být nil v polárním dni")
-        // XCTAssertNil(times.dawn, "Dawn by měl být nil v polárním dni")
-        // XCTAssertNil(times.dusk, "Dusk by měl být nil v polárním dni")
-        // XCTAssertNil(times.nauticalDawn, "Nautical dawn by měl být nil v polárním dni")
-        // XCTAssertNil(times.nauticalDusk, "Nautical dusk by měl být nil v polárním dni")
+        // OPRAVENO: SunCalc nyní správně vrací nil pro polární den
+        XCTAssertNil(times.sunrise, "Sunrise by měl být nil v polárním dni")
+        XCTAssertNil(times.sunset, "Sunset by měl být nil v polárním dni")
+        XCTAssertNil(times.dawn, "Dawn by měl být nil v polárním dni")
+        XCTAssertNil(times.dusk, "Dusk by měl být nil v polárním dni")
+        XCTAssertNil(times.nauticalDawn, "Nautical dawn by měl být nil v polárním dni")
+        XCTAssertNil(times.nauticalDusk, "Nautical dusk by měl být nil v polárním dni")
+        XCTAssertNil(times.morningGoldenHourStart, "Morning golden hour start by měl být nil v polárním dni")
+        XCTAssertNil(times.eveningGoldenHourEnd, "Evening golden hour end by měl být nil v polárním dni")
 
         // Solar noon a nadir VŽDY existují
         XCTAssertNotNil(times.solarNoon, "Solar noon musí vždy existovat")
@@ -114,13 +107,9 @@ final class SunCalcPolarTests: XCTestCase {
 
         let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
 
-        // DOKUMENTACE BUGU
-        if let sunrise = times.sunrise {
-            print("   ❌ BUG: sunrise = \(sunrise) (mělo by být nil)")
-        }
-
-        // TODO: Po opravě SunCalc
-        // XCTAssertNil(times.sunrise, "Sunrise by měl být nil na Svalbardu během polárního dne")
+        // OPRAVENO: SunCalc nyní správně vrací nil
+        XCTAssertNil(times.sunrise, "Sunrise by měl být nil na Svalbardu během polárního dne")
+        XCTAssertNil(times.sunset, "Sunset by měl být nil na Svalbardu během polárního dne")
     }
 
     // MARK: - Polar Night Tests (Arctic Winter)
@@ -145,14 +134,49 @@ final class SunCalcPolarTests: XCTestCase {
 
         let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
 
-        // DOKUMENTACE BUGU
-        if let sunrise = times.sunrise {
-            print("   ❌ BUG: sunrise = \(sunrise) (mělo by být nil)")
-        }
+        // OPRAVENO: SunCalc nyní správně vrací nil pro polární noc
+        XCTAssertNil(times.sunrise, "Sunrise by měl být nil v polární noci")
+        XCTAssertNil(times.sunset, "Sunset by měl být nil v polární noci")
+        XCTAssertNil(times.dawn, "Dawn by měl být nil v polární noci")
+        XCTAssertNil(times.dusk, "Dusk by měl být nil v polární noci")
+    }
 
-        // TODO: Po opravě SunCalc
-        // XCTAssertNil(times.sunrise, "Sunrise by měl být nil v polární noci")
-        // XCTAssertNil(times.sunset, "Sunset by měl být nil v polární noci")
+    /// Test: Barrow, Alaska (71°N) 10. května - NENÍ ještě polární den
+    /// Tohle je přesně případ ze zadání - slunce stále zapadá těsně pod horizont
+    /// ale měly by existovat normální sun/twilight události (ne polární den)
+    func test_barrow_may10_normalDay() {
+        // Utqiaġvik (Barrow): 71.2906°N, -156.7886°W
+        let latitude = 71.2906
+        let longitude = -156.7886
+
+        // 10. května 2025 - těsně před polárním dnem
+        let date = makeDate(year: 2025, month: 5, day: 10)
+
+        let (minAltitude, maxAltitude) = checkSunAltitudeAllDay(date: date, latitude: latitude, longitude: longitude)
+
+        print("🌅 Barrow 10. května (těsně před polárním dnem):")
+        print("   Min altitude: \(minAltitude)°")
+        print("   Max altitude: \(maxAltitude)°")
+
+        // Slunce stále klesá pod horizont (ale těsně)
+        XCTAssertLessThan(minAltitude, -0.83, "Slunce by mělo těsně klesat pod horizont (není ještě polární den)")
+        XCTAssertGreaterThan(minAltitude, -2.0, "Ale jen těsně pod horizont")
+
+        let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
+
+        // Sunrise a sunset by měly EXISTOVAT (není polární den)
+        XCTAssertNotNil(times.sunrise, "Sunrise by měl existovat - není ještě polární den")
+        XCTAssertNotNil(times.sunset, "Sunset by měl existovat - není ještě polární den")
+
+        // Civil/nautical/astronomical twilight by měly také existovat
+        XCTAssertNotNil(times.dawn, "Civil dawn by měl existovat")
+        XCTAssertNotNil(times.dusk, "Civil dusk by měl existovat")
+
+        // Solar noon a nadir vždy existují
+        XCTAssertNotNil(times.solarNoon, "Solar noon musí vždy existovat")
+        XCTAssertNotNil(times.nadir, "Nadir musí vždy existovat")
+
+        print("   ✅ Správně detekován normální den (slunce zapadá těsně pod horizont)")
     }
 
     /// Test: Barrow, Alaska (71°N) během zimní tmy
@@ -174,9 +198,9 @@ final class SunCalcPolarTests: XCTestCase {
 
         let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
 
-        if let sunrise = times.sunrise {
-            print("   ❌ BUG: sunrise = \(sunrise) (mělo by být nil)")
-        }
+        // OPRAVENO: SunCalc nyní správně vrací nil
+        XCTAssertNil(times.sunrise, "Sunrise by měl být nil v polární noci")
+        XCTAssertNil(times.sunset, "Sunset by měl být nil v polární noci")
     }
 
     // MARK: - South Pole Tests
@@ -200,9 +224,9 @@ final class SunCalcPolarTests: XCTestCase {
 
         let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
 
-        // TODO: Po opravě SunCalc
-        // XCTAssertNil(times.sunrise)
-        // XCTAssertNil(times.sunset)
+        // OPRAVENO: SunCalc nyní správně vrací nil pro polární den
+        XCTAssertNil(times.sunrise, "Sunrise by měl být nil na jižním pólu během polárního dne")
+        XCTAssertNil(times.sunset, "Sunset by měl být nil na jižním pólu během polárního dne")
     }
 
     /// Test: Jižní pól během jižní zimy (červen)
@@ -224,9 +248,9 @@ final class SunCalcPolarTests: XCTestCase {
 
         let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
 
-        // TODO: Po opravě SunCalc
-        // XCTAssertNil(times.sunrise)
-        // XCTAssertNil(times.sunset)
+        // OPRAVENO: SunCalc nyní správně vrací nil pro polární noc
+        XCTAssertNil(times.sunrise, "Sunrise by měl být nil na jižním pólu během polární noci")
+        XCTAssertNil(times.sunset, "Sunset by měl být nil na jižním pólu během polární noci")
     }
 
     // MARK: - Edge Cases Near Arctic Circle

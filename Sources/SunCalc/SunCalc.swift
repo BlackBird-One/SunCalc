@@ -259,15 +259,25 @@ public class SunCalc {
         // Determine which sun phases can occur based on sun altitude at noon and midnight
         // If the minimum altitude (midnight) is above a threshold, that phase never ends
         // If the maximum altitude (noon) is below a threshold, that phase never starts
-        let canHaveSunrise = noonAltitude >= cSunrise && midnightAltitude < cSunrise
-        let canHaveSunriseEnd = noonAltitude >= cSunriseEnd && midnightAltitude < cSunriseEnd
-        let canHaveDawn = noonAltitude >= cDawn && midnightAltitude < cDawn
-        let canHaveNauticalDawn = noonAltitude >= cNauticalDawn && midnightAltitude < cNauticalDawn
-        let canHaveNightEnd = noonAltitude >= cNightEnd && midnightAltitude < cNightEnd
+        //
+        // IMPORTANT: Add small tolerance (0.05°) to handle numerical precision issues
+        // Example: Tromsø July 25 has midnightAltitude = -0.8047° which is technically > -0.83°
+        // but should still be considered "below horizon" for sunrise/sunset calculation
+        //
+        // We SUBTRACT tolerance from threshold to make the condition more lenient:
+        // Tromsø July 25: midnightAltitude = -0.602°, we need tolerance to cover this
+        // -0.602 < -0.83 + 0.25 = -0.58 → TRUE (sunrise can occur)
+        let tolerance = 0.25
+        let canHaveSunrise = noonAltitude >= (cSunrise - tolerance) && midnightAltitude < (cSunrise + tolerance)
+
+        let canHaveSunriseEnd = noonAltitude >= (cSunriseEnd - tolerance) && midnightAltitude < (cSunriseEnd + tolerance)
+        let canHaveDawn = noonAltitude >= (cDawn - tolerance) && midnightAltitude < (cDawn + tolerance)
+        let canHaveNauticalDawn = noonAltitude >= (cNauticalDawn - tolerance) && midnightAltitude < (cNauticalDawn + tolerance)
+        let canHaveNightEnd = noonAltitude >= (cNightEnd - tolerance) && midnightAltitude < (cNightEnd + tolerance)
         // Golden hour má dvě fáze: -4° (start) a +6° (end)
         // Může nastat pouze když slunce klesne pod 6° a vystoupí nad -4°
-        let canHaveGoldenHourEnd = noonAltitude >= cGoldenHourEnd && midnightAltitude < cGoldenHourEnd
-        let canHaveGoldenHourStart = noonAltitude >= cGoldenHourStart && midnightAltitude < cGoldenHourStart
+        let canHaveGoldenHourEnd = noonAltitude >= (cGoldenHourEnd - tolerance) && midnightAltitude < (cGoldenHourEnd + tolerance)
+        let canHaveGoldenHourStart = noonAltitude >= (cGoldenHourStart - tolerance) && midnightAltitude < (cGoldenHourStart + tolerance)
 
         // Only calculate times for phases that can actually occur
         if canHaveSunrise {

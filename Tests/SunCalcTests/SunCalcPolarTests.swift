@@ -347,4 +347,63 @@ final class SunCalcPolarTests: XCTestCase {
             XCTAssertLessThan(twilightDuration, 30, "Soumrak na rovníku by měl být kratší než 30 minut")
         }
     }
+
+    /// Test: Tromso, Norsko (69.65°N) během 25. července 2025
+    /// Očekává: Sunrise a sunset EXISTUJÍ (ne polární den!)
+    /// Podle uživatele: Sunrise 1:50, Sunset 23:52
+    func test_tromso_july25_2025_sunrise_sunset_exist() {
+        // Tromso: 69.6492°N, 18.9553°E
+        let latitude = 69.6492
+        let longitude = 18.9553
+
+        // 25. července 2025
+        let date = makeDate(year: 2025, month: 7, day: 25)
+
+        // Zkontroluj altitude po celý den
+        let (minAltitude, maxAltitude) = checkSunAltitudeAllDay(date: date, latitude: latitude, longitude: longitude)
+
+        print("🌞 Tromsø 25. července 2025:")
+        print("   Min altitude: \(minAltitude)°")
+        print("   Max altitude: \(maxAltitude)°")
+
+        // Získej časy ze SunCalc
+        let times = SunCalc.getTimes(date: date, latitude: latitude, longitude: longitude)
+
+        // KRITICKÝ TEST: Sunrise a sunset MUSÍ EXISTOVAT!
+        // Uživatel reportuje: Sunrise 1:50, Sunset 23:52
+        XCTAssertNotNil(times.sunrise, "❌ CHYBA: Sunrise by NEMĚL být nil 25.7. (uživatel vidí 1:50)")
+        XCTAssertNotNil(times.sunset, "❌ CHYBA: Sunset by NEMĚL být nil 25.7. (uživatel vidí 23:52)")
+
+        // Vypište časová data pro kontrolu
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        formatter.timeZone = TimeZone(identifier: "Europe/Oslo")
+
+        if let sunrise = times.sunrise {
+            print("   ✅ Sunrise: \(formatter.string(from: sunrise))")
+        } else {
+            print("   ❌ Sunrise: NIL (BUG!)")
+        }
+
+        if let sunset = times.sunset {
+            print("   ✅ Sunset: \(formatter.string(from: sunset))")
+        } else {
+            print("   ❌ Sunset: NIL (BUG!)")
+        }
+
+        // Civil twilight také by měl existovat
+        XCTAssertNotNil(times.dawn, "Civil dawn by měl existovat 25.7.")
+        XCTAssertNotNil(times.dusk, "Civil dusk by měl existovat 25.7.")
+
+        // Solar noon a nadir VŽDY existují
+        XCTAssertNotNil(times.solarNoon, "Solar noon musí vždy existovat")
+        XCTAssertNotNil(times.nadir, "Nadir (solar midnight) musí vždy existovat")
+
+        // Poznámka o altitude:
+        // minAltitude by měla být ~-5° (slunce klesne pod horizont)
+        // maxAltitude by měla být ~40° (vysoká polední pozice, ale NE polární den)
+        print("   ℹ️  Očekáváme: minAltitude ~-5°, maxAltitude ~40°")
+        XCTAssertLessThan(minAltitude, -0.83, "Slunce by mělo klesnout pod horizont (ne polární den)")
+        XCTAssertGreaterThan(maxAltitude, 35, "Slunce by mělo dosáhnout vysoké pozice v poledne")
+    }
 }

@@ -27,8 +27,15 @@ class TimeUtils {
 
 	class func getHourAngle(h: Double, phi: Double, d: Double) -> Double {
         let value = (sin(h) - sin(phi) * sin(d)) / (cos(phi) * cos(d))
+
+        // Clamp value to valid range [-1, 1] for acos
+        // If value is outside this range, it means the sun never reaches the given altitude
+        // In such cases, we still need to return a valid number (not NaN)
+        // but the caller should check if the event can actually occur
         if value < -1 {
-            return acos(-1)
+            return acos(-1)  // π (180°) - sun never sets
+        } else if value > 1 {
+            return acos(1)   // 0 - sun never rises
         } else {
             return acos(value)
         }
